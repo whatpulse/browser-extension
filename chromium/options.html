@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>WhatPulse Web Insights - Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="header-icon">
+          <img src="icons/icon128.png" alt="WhatPulse Icon" />
+        </div>
+        <h1>WhatPulse Web Insights</h1>
+        <p>Provides website usage insights for your WhatPulse account.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Connection status
+        </div>
+
+        <div class="status-row">
+          <div id="statusIndicator" class="status-indicator disconnected"></div>
+          <div class="status-text">
+            <div id="statusTitle" class="title">Checking...</div>
+            <div id="statusSubtitle" class="subtitle">Please wait</div>
+          </div>
+        </div>
+
+        <div class="btn-row-no-margin">
+          <button id="testBtn" class="btn btn-secondary">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
+              ></path>
+            </svg>
+            Test connection
+          </button>
+        </div>
+
+        <div id="testMessage" class="message"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          How it works
+        </div>
+
+        <ol class="setup-steps">
+          <li>
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <strong>Install the extension</strong>
+              <span>You've already done this step</span>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <strong>Open WhatPulse</strong>
+              <span>Make sure the WhatPulse desktop app is running</span>
+            </div>
+          </li>
+          <li>
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <strong>Approve the connection</strong>
+              <span
+                >WhatPulse will show a notification to approve this
+                extension</span
+              >
+            </div>
+          </li>
+          <li>
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <strong>Browse normally</strong>
+              <span>Time spent on websites will be measured automatically</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Frequently Asked Questions</div>
+        <div class="faq-item">
+          <div class="question">What data is being measured?</div>
+          <div class="answer">
+            This extension measures the domains you visit and the time and
+            effort spent on each domain. No personal data or specific page URLs
+            are collected. I.e., if you visit example.com/page1 and
+            example.com/page2, only example.com is recorded.
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="question">Where is the data stored?</div>
+          <div class="answer">
+            All data collected by this extension is transmitted to the WhatPulse
+            desktop application on your own computer (via WebSocket on port
+            3988). From there, it is sent to the WhatPulse servers using
+            end-to-end encryption. Only you have access to your data through
+            your WhatPulse account.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <a href="https://whatpulse.org" target="_blank">whatpulse.org</a>
+      </div>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
