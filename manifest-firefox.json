@@ -3,6 +3,12 @@
   "name": "WhatPulse Web Insights",
   "version": "0.0.1",
   "description": "Provides website usage insights for your WhatPulse account.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "webinsights@whatpulse.org",
+      "strict_min_version": "109.0"
+    }
+  },
   "permissions": [
     "tabs",
     "storage",
@@ -27,11 +33,13 @@
     }
   ],
   "background": {
-    "service_worker": "background.js",
+    "scripts": [
+      "background/background.js"
+    ],
     "type": "module"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/action-icon16.png",
       "32": "icons/action-icon32.png",
@@ -44,5 +52,8 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "options_page": "options.html"
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  }
 }

@@ -1,0 +1,62 @@
+# github workflow to release a new version of the extensions.
+# 1. run on push to the release branch
+# 2. run through this for each extension type
+# 2.1 run sh switch-target.sh chrome, and zip the chrome extension with files manifest.json, background*, images*
+# 2.2 run sh switch-target.sh firefox, and zip the firefox extension with files manifest.json, background*, images*
+# 2.3 run sh switch-target.sh safari, and zip the safari extension with files manifest.json, background*, images*
+# 3. create a new release on github with the zipped files
+
+name: Release Extensions
+
+on:
+  push:
+    branches:
+      - release
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        extension: [chrome, firefox, safari]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract version from manifest
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' manifest-chrome.json)
+          echo "Version of the extension is $VERSION"
+          echo "::set-output name=version::$VERSION"
+
+      - name: Set zip name
+        id: set_zip_name
+        run: |
+          ZIP_NAME="v${{ steps.get_version.outputs.version }}-${{ matrix.extension }}-extension.zip"
+          echo "::set-output name=zip_name::$ZIP_NAME"
+
+      - name: Switch target and zip files
+        run: |
+          bash switch-target.sh ${{ matrix.extension }}
+          zip -r ${{ steps.set_zip_name.outputs.zip_name }} manifest.json background* icons* options* popup* content.js
+          mkdir -p release
+          cp ${{ steps.set_zip_name.outputs.zip_name }} release/
+
+      - name: Upload to R2
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: release
+          destination-dir: ./browser-extensions/
+
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: "✅ Extension built: https://releases-dev.whatpulse.org/browser-extensions/${{ steps.set_zip_name.outputs.zip_name }}"
