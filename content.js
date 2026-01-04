@@ -1,11 +1,11 @@
 // WhatPulse Website Tracking - Content Script
 // Captures input events (keystrokes, clicks, scroll, mouse movement) and reports to background script
 
-(function() {
+(function () {
   'use strict';
 
   // Accumulate input events, send to background every 5 seconds
-  let inputStats = { keys: 0, clicks: 0, scrollPixels: 0, mouseDistanceIn: 0 };
+  let inputStats = { keys: 0, clicks: 0, scrolls: 0, mouseDistanceIn: 0 };
   let lastMousePos = null;
 
   // Get device DPI for pixel-to-inch conversion (default 96 DPI)
@@ -21,21 +21,9 @@
     inputStats.clicks++;
   }, { passive: true });
 
-  // Track scroll distance normalized to pixels
-  document.addEventListener('wheel', (e) => {
-    let pixels = Math.abs(e.deltaY);
-
-    // Normalize based on deltaMode
-    if (e.deltaMode === 1) {
-      // deltaMode 1 = lines, ~16px per line
-      pixels *= 16;
-    } else if (e.deltaMode === 2) {
-      // deltaMode 2 = pages
-      pixels *= window.innerHeight;
-    }
-    // deltaMode 0 = pixels (no conversion needed)
-
-    inputStats.scrollPixels += pixels;
+  // Track scroll actions (each wheel event = 1 action, i.e., one "tick" of the scroll wheel)
+  document.addEventListener('wheel', () => {
+    inputStats.scrolls++;
   }, { passive: true });
 
   // Track mouse movement distance in inches
@@ -54,13 +42,13 @@
   // Report to background every 5 seconds
   setInterval(() => {
     // Only send if there's data
-    if (inputStats.keys || inputStats.clicks || inputStats.scrollPixels || inputStats.mouseDistanceIn) {
+    if (inputStats.keys || inputStats.clicks || inputStats.scrolls || inputStats.mouseDistanceIn) {
       try {
         chrome.runtime.sendMessage({
           type: 'inputStats',
           keys: inputStats.keys,
           clicks: inputStats.clicks,
-          scrollPixels: inputStats.scrollPixels,
+          scrolls: inputStats.scrolls,
           mouseDistanceIn: inputStats.mouseDistanceIn
         });
       } catch (e) {
@@ -68,7 +56,7 @@
       }
 
       // Reset accumulators
-      inputStats = { keys: 0, clicks: 0, scrollPixels: 0, mouseDistanceIn: 0 };
+      inputStats = { keys: 0, clicks: 0, scrolls: 0, mouseDistanceIn: 0 };
     }
   }, 5000);
 })();

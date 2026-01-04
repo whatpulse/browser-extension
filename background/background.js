@@ -42,7 +42,7 @@ let timeTracking = {
 };
 
 // Input tracking state (from content script)
-let accumulatedInput = {};  // { "github.com": { keys: 10, clicks: 5, scrollPixels: 100, mouseDistanceIn: 2.5 } }
+let accumulatedInput = {};  // { "github.com": { keys: 10, clicks: 5, scrolls: 12, mouseDistanceIn: 2.5 } }
 
 // Metadata tracking: { domain: lastSentTimestamp }
 let metadataSentTimes = {};
@@ -304,13 +304,13 @@ function sendUsageReport() {
   // First add domains with time data (most common case)
   for (const [domain, seconds] of Object.entries(timeTracking.accumulatedTime)) {
     if (seconds > 0) {
-      const input = accumulatedInput[domain] || { keys: 0, clicks: 0, scrollPixels: 0, mouseDistanceIn: 0 };
+      const input = accumulatedInput[domain] || { keys: 0, clicks: 0, scrolls: 0, mouseDistanceIn: 0 };
       report.push({
         domain,
         seconds,
         keys: input.keys,
         clicks: input.clicks,
-        scroll_pixels: Math.round(input.scrollPixels),
+        scrolls: input.scrolls,
         mouse_distance_in: input.mouseDistanceIn
       });
     }
@@ -318,13 +318,13 @@ function sendUsageReport() {
 
   // Also include domains with input but no time (edge case: fast domain switch)
   for (const [domain, input] of Object.entries(accumulatedInput)) {
-    if (!timeTracking.accumulatedTime[domain] && (input.keys || input.clicks || input.scrollPixels || input.mouseDistanceIn)) {
+    if (!timeTracking.accumulatedTime[domain] && (input.keys || input.clicks || input.scrolls || input.mouseDistanceIn)) {
       report.push({
         domain,
         seconds: 0,
         keys: input.keys,
         clicks: input.clicks,
-        scroll_pixels: Math.round(input.scrollPixels),
+        scrolls: input.scrolls,
         mouse_distance_in: input.mouseDistanceIn
       });
     }
@@ -682,11 +682,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Only accumulate input when browser is focused and not idle
     if (domain && currentState.isFocused && !currentState.isIdle) {
       if (!accumulatedInput[domain]) {
-        accumulatedInput[domain] = { keys: 0, clicks: 0, scrollPixels: 0, mouseDistanceIn: 0 };
+        accumulatedInput[domain] = { keys: 0, clicks: 0, scrolls: 0, mouseDistanceIn: 0 };
       }
       accumulatedInput[domain].keys += message.keys || 0;
       accumulatedInput[domain].clicks += message.clicks || 0;
-      accumulatedInput[domain].scrollPixels += message.scrollPixels || 0;
+      accumulatedInput[domain].scrolls += message.scrolls || 0;
       accumulatedInput[domain].mouseDistanceIn += message.mouseDistanceIn || 0;
     }
     return false; // No response needed

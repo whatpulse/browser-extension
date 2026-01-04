@@ -207,7 +207,7 @@ Accumulated time per domain. Alternative to frequent heartbeats for bandwidth ef
       "seconds": 25,
       "keys": 150,
       "clicks": 30,
-      "scroll_pixels": 5000,
+      "scrolls": 42,
       "mouse_distance_in": 12.5
     },
     {
@@ -215,7 +215,7 @@ Accumulated time per domain. Alternative to frequent heartbeats for bandwidth ef
       "seconds": 10,
       "keys": 0,
       "clicks": 5,
-      "scroll_pixels": 2000,
+      "scrolls": 15,
       "mouse_distance_in": 3.2
     }
   ]
