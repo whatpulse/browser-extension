@@ -3,7 +3,6 @@
 # 2. run through this for each extension type
 # 2.1 run sh switch-target.sh chrome, and zip the chrome extension with files manifest.json, background*, images*
 # 2.2 run sh switch-target.sh firefox, and zip the firefox extension with files manifest.json, background*, images*
-# 2.3 run sh switch-target.sh safari, and zip the safari extension with files manifest.json, background*, images*
 # 3. create a new release on github with the zipped files
 
 name: Release Extensions
@@ -18,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        extension: [chrome, firefox, safari]
+        extension: [chrome, firefox]
 
     steps:
       - name: Checkout code

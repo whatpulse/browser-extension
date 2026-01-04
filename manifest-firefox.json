@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WhatPulse Web Insights",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Provides website usage insights for your WhatPulse account.",
   "browser_specific_settings": {
     "gecko": {
