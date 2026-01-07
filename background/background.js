@@ -121,21 +121,146 @@ function extractDomain(url) {
   }
 }
 
-// Get browser info
-function getBrowserInfo() {
-  const userAgent = navigator.userAgent;
-  let browserName = 'chrome';
-
-  if (userAgent.includes('Edg/')) {
-    browserName = 'edge';
-  } else if (userAgent.includes('Brave/')) {
-    browserName = 'brave';
+// Get browser info - comprehensive detection for all major browsers
+async function getBrowserInfo() {
+  // Firefox: use the dedicated WebExtensions API
+  if (typeof browser !== 'undefined' && browser.runtime?.getBrowserInfo) {
+    try {
+      const info = await browser.runtime.getBrowserInfo();
+      return { name: info.name.toLowerCase(), version: info.version };
+    } catch (e) {
+      console.log('[WhatPulse] Firefox getBrowserInfo failed:', e.message);
+    }
   }
 
-  const match = userAgent.match(/Chrome\/([\d.]+)/);
-  const version = match ? match[1] : 'unknown';
+  // Brave: must check before other Chromium browsers (hides from userAgentData.brands)
+  if (navigator.brave) {
+    try {
+      const isBrave = await navigator.brave.isBrave();
+      if (isBrave) {
+        const version = await getChromiumFullVersion();
+        return { name: 'brave', version };
+      }
+    } catch (e) {
+      console.log('[WhatPulse] Brave detection failed:', e.message);
+    }
+  }
 
-  return { name: browserName, version };
+  // Chromium browsers: use User-Agent Client Hints API (Chrome 90+, Edge 90+)
+  if (navigator.userAgentData?.brands) {
+    // Browser brands in order of specificity (most specific first)
+    const browserBrands = [
+      { brand: 'Microsoft Edge', name: 'edge' },
+      { brand: 'Opera', name: 'opera' },
+      { brand: 'Google Chrome', name: 'chrome' },
+      { brand: 'Chromium', name: 'chromium' },  // Generic Chromium fallback
+    ];
+
+    for (const { brand, name } of browserBrands) {
+      const match = navigator.userAgentData.brands.find(b => b.brand === brand);
+      if (match) {
+        // Try to get full version for more detail
+        try {
+          const highEntropy = await navigator.userAgentData.getHighEntropyValues(['fullVersionList']);
+          const fullVersion = highEntropy.fullVersionList?.find(b => b.brand === brand);
+          return { name, version: fullVersion?.version || match.version };
+        } catch {
+          return { name, version: match.version };
+        }
+      }
+    }
+  }
+
+  // Fallback: User-Agent string parsing for older browsers or unsupported APIs
+  return getBrowserInfoFromUserAgent();
+}
+
+// Get full Chromium version using Client Hints API
+async function getChromiumFullVersion() {
+  if (navigator.userAgentData) {
+    try {
+      const data = await navigator.userAgentData.getHighEntropyValues(['fullVersionList']);
+      const chromium = data.fullVersionList?.find(b => b.brand === 'Chromium');
+      if (chromium) return chromium.version;
+    } catch (e) {
+      // Fall through to UA parsing
+    }
+  }
+  // Fallback to UA string
+  const match = navigator.userAgent.match(/Chrome\/([\d.]+)/);
+  return match ? match[1] : 'unknown';
+}
+
+// Fallback browser detection using User-Agent string
+function getBrowserInfoFromUserAgent() {
+  const ua = navigator.userAgent;
+
+  // Order matters: check more specific browsers first
+
+  // Firefox (including variants)
+  let match = ua.match(/Firefox\/([\d.]+)/);
+  if (match) {
+    return { name: 'firefox', version: match[1] };
+  }
+
+  // Edge (Chromium-based, has "Edg/" not "Edge/")
+  match = ua.match(/Edg\/([\d.]+)/);
+  if (match) {
+    return { name: 'edge', version: match[1] };
+  }
+
+  // Edge Legacy (EdgeHTML engine, rare now)
+  match = ua.match(/Edge\/([\d.]+)/);
+  if (match) {
+    return { name: 'edge-legacy', version: match[1] };
+  }
+
+  // Opera (Chromium-based)
+  match = ua.match(/OPR\/([\d.]+)/);
+  if (match) {
+    return { name: 'opera', version: match[1] };
+  }
+
+  // Vivaldi
+  match = ua.match(/Vivaldi\/([\d.]+)/);
+  if (match) {
+    return { name: 'vivaldi', version: match[1] };
+  }
+
+  // Samsung Internet
+  match = ua.match(/SamsungBrowser\/([\d.]+)/);
+  if (match) {
+    return { name: 'samsung', version: match[1] };
+  }
+
+  // Arc (identifies as Chrome but has Arc in UA on some platforms)
+  if (ua.includes('Arc/')) {
+    match = ua.match(/Arc\/([\d.]+)/);
+    if (match) {
+      return { name: 'arc', version: match[1] };
+    }
+  }
+
+  // Yandex Browser
+  match = ua.match(/YaBrowser\/([\d.]+)/);
+  if (match) {
+    return { name: 'yandex', version: match[1] };
+  }
+
+  // Generic Chrome (must be after other Chromium browsers)
+  match = ua.match(/Chrome\/([\d.]+)/);
+  if (match) {
+    return { name: 'chrome', version: match[1] };
+  }
+
+  // Safari (must be after Chrome since Chrome also has Safari in UA)
+  match = ua.match(/Version\/([\d.]+).*Safari/);
+  if (match) {
+    return { name: 'safari', version: match[1] };
+  }
+
+  // Unknown browser
+  return { name: 'unknown', version: 'unknown' };
 }
 
 // ============ Metadata / Favicon ============
@@ -391,10 +516,10 @@ function connect() {
   try {
     websocket = new WebSocket(`ws://127.0.0.1:${WS_PORT}`);
 
-    websocket.onopen = () => {
+    websocket.onopen = async () => {
       try {
         console.log('[WhatPulse] WebSocket connected');
-        sendHello();
+        await sendHello();
       } catch (e) {
         console.log('[WhatPulse] Error in onopen handler:', e.message);
       }
@@ -481,11 +606,12 @@ function sendMessage(msg) {
   }
 }
 
-function sendHello() {
+async function sendHello() {
+  const browserInfo = await getBrowserInfo();
   sendMessage({
     type: 'hello',
     auth_token: config.authToken,
-    browser: getBrowserInfo(),
+    browser: browserInfo,
     capabilities: ['activeTab', 'visibility', 'url', 'usageReport'],
     ext_version: chrome.runtime.getManifest().version
   });
