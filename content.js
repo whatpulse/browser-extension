@@ -27,16 +27,30 @@
   }, { passive: true });
 
   // Track mouse movement distance in inches
-  document.addEventListener('mousemove', (e) => {
-    if (lastMousePos) {
-      const dx = e.clientX - lastMousePos.x;
-      const dy = e.clientY - lastMousePos.y;
-      const distancePx = Math.sqrt(dx * dx + dy * dy);
+  // Throttled via requestAnimationFrame to reduce CPU usage (~60fps max)
+  let rafPending = false;
+  let pendingMouseEvent = null;
 
-      // Convert pixels to inches
-      inputStats.mouseDistanceIn += distancePx / dpi;
+  document.addEventListener('mousemove', (e) => {
+    pendingMouseEvent = e;
+
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        if (pendingMouseEvent && lastMousePos) {
+          const dx = pendingMouseEvent.clientX - lastMousePos.x;
+          const dy = pendingMouseEvent.clientY - lastMousePos.y;
+          const distancePx = Math.sqrt(dx * dx + dy * dy);
+
+          // Convert pixels to inches
+          inputStats.mouseDistanceIn += distancePx / dpi;
+        }
+        if (pendingMouseEvent) {
+          lastMousePos = { x: pendingMouseEvent.clientX, y: pendingMouseEvent.clientY };
+        }
+      });
     }
-    lastMousePos = { x: e.clientX, y: e.clientY };
   }, { passive: true });
 
   // Report to background every 5 seconds
