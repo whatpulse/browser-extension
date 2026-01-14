@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Web Insights for WhatPulse",
-  "version": "0.1.0",
+  "short_name": "Web Insights",
+  "version": "0.3.0",
   "description": "Provides website usage insights for your WhatPulse account.",
+  "homepage_url": "https://whatpulse.org",
   "permissions": [
     "tabs",
     "storage",

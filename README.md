@@ -9,23 +9,24 @@ The extension uses a **local WebSocket connection** to communicate with the What
 ## Project structure
 
 ```
-├── background/         # Background service worker
+├── background/             # Background service worker
 │   └── background.js
-├── popup/              # Extension popup UI
+├── popup/                  # Extension popup UI
 │   ├── popup.html
 │   ├── popup.js
 │   └── popup.css
-├── options/            # Options page
+├── options/                # Options page
 │   ├── options.html
 │   ├── options.js
 │   └── options.css
-├── icons/              # Extension icons (16, 32, 48, 128, 400px)
-├── content.js          # Content script for input tracking
-├── manifest.json       # Active manifest (copy of browser-specific manifest)
+├── icons/                  # Extension icons (16, 32, 48, 128, 400px)
+├── content.js              # Content script for input tracking
+├── manifest.json           # Active manifest (copy of browser-specific manifest)
 ├── manifest-chrome.json    # Chrome/Chromium manifest
 ├── manifest-firefox.json   # Firefox manifest
 ├── manifest-safari.json    # Safari manifest
-└── switch-target.sh    # Script to switch between browser targets
+├── switch-target.sh        # Script to switch between browser targets
+└── release.sh              # Script to create a new release
 ```
 
 ## Supported browsers
@@ -41,6 +42,8 @@ The extension uses a **local WebSocket connection** to communicate with the What
 - **No history storage**: Extensions don't store any browsing data
 - **Explicit opt-in**: Users must install the extension and approve pairing
 - **Private browsing**: No data is sent for private/incognito windows
+
+For full details, see the [WhatPulse Privacy Policy](https://whatpulse.org/privacy).
 
 ## Installation
 
@@ -375,16 +378,31 @@ The extension stores configuration in browser local storage:
 
 The WebSocket port is fixed at `3488` and must match the WhatPulse desktop client.
 
-## Building for production
+## Releasing a new version
 
-The project uses GitHub Actions for automated releases. When code is pushed to the `release` branch:
+Use the `release.sh` script to create a new release:
 
-1. The workflow extracts the version from `manifest-chrome.json`
-2. For each target (Chrome, Firefox), it:
-   - Switches the manifest using `switch-target.sh`
-   - Zips the extension files
-   - Uploads to R2 storage
-3. Sends a Discord notification with the download link
+```bash
+./release.sh 1.0.0
+```
+
+To repackage an existing version (overwrites the tag):
+
+```bash
+./release.sh 1.0.0 --force
+```
+
+This script:
+1. Updates the version in all `manifest-*.json` files
+2. Commits the version change
+3. Creates a git tag (e.g., `v1.0.0`)
+4. Pushes to main and the release branch
+5. Triggers the GitHub Actions build workflow
+
+The GitHub Actions workflow then:
+1. Builds extensions for Chrome and Firefox
+2. Uploads to R2 storage
+3. Sends a Discord notification
 
 Release artifacts are available at:
 - `https://releases-dev.whatpulse.org/browser-extensions/v{version}-chrome-extension.zip`
