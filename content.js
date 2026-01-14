@@ -54,7 +54,13 @@
   }, { passive: true });
 
   // Report to background every 5 seconds
-  setInterval(() => {
+  const reportInterval = setInterval(() => {
+    // Check if extension context is still valid
+    if (!chrome.runtime?.id) {
+      clearInterval(reportInterval);
+      return;
+    }
+
     // Only send if there's data
     if (inputStats.keys || inputStats.clicks || inputStats.scrolls || inputStats.mouseDistanceIn) {
       try {
@@ -66,7 +72,9 @@
           mouseDistanceIn: inputStats.mouseDistanceIn
         });
       } catch (e) {
-        // Extension context may be invalidated, ignore
+        // Extension context may be invalidated, stop reporting
+        clearInterval(reportInterval);
+        return;
       }
 
       // Reset accumulators
