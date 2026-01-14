@@ -118,7 +118,11 @@ async function testConnection() {
  * Show a message in a message element
  */
 function showMessage(element, type, text) {
-  element.innerHTML = (type === 'success' ? successIcon : errorIcon) + `<span>${text}</span>`;
+  // Use safe DOM manipulation to prevent XSS
+  element.innerHTML = type === 'success' ? successIcon : errorIcon;
+  const span = document.createElement('span');
+  span.textContent = text;
+  element.appendChild(span);
   element.className = `message ${type}`;
   element.style.display = 'flex';
 }
