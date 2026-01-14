@@ -1,15 +1,38 @@
-# WhatPulse Web Insight Browser Extensions
+# WhatPulse Web Insights Browser Extension
 
-This directory contains browser extensions that connect to the WhatPulse desktop client via WebSocket to enable website time insights.
+A unified browser extension that connects to the WhatPulse desktop client via WebSocket to enable website time insights.
 
 ## Architecture
 
-The extensions use a **local WebSocket connection** to communicate with the WhatPulse client running on the same machine. They monitor active tabs and send domain information when conditions are met.
+The extension uses a **local WebSocket connection** to communicate with the WhatPulse client running on the same machine. It monitors active tabs and sends domain usage information when conditions are met.
 
-## Extensions
+## Project structure
 
-- **chromium/**: Manifest V3 extension for Chrome, Edge, Brave, and other Chromium-based browsers
-- **firefox/**: Manifest V3 extension for Firefox
+```
+├── background/         # Background service worker
+│   └── background.js
+├── popup/              # Extension popup UI
+│   ├── popup.html
+│   ├── popup.js
+│   └── popup.css
+├── options/            # Options page
+│   ├── options.html
+│   ├── options.js
+│   └── options.css
+├── icons/              # Extension icons (16, 32, 48, 128, 400px)
+├── content.js          # Content script for input tracking
+├── manifest.json       # Active manifest (copy of browser-specific manifest)
+├── manifest-chrome.json    # Chrome/Chromium manifest
+├── manifest-firefox.json   # Firefox manifest
+├── manifest-safari.json    # Safari manifest
+└── switch-target.sh    # Script to switch between browser targets
+```
+
+## Supported browsers
+
+- **Chromium-based**: Chrome, Edge, Brave, Opera, Vivaldi, Arc, Yandex, Samsung Internet
+- **Firefox**: Firefox and Firefox-based browsers
+- **Safari**: macOS Safari (requires native messaging)
 
 ## Security & Privacy
 
@@ -21,22 +44,41 @@ The extensions use a **local WebSocket connection** to communicate with the What
 
 ## Installation
 
-### Chromium (Chrome, Edge, Brave)
+### Development installation
 
-1. Open `chrome://extensions/` (or `edge://extensions/` for Edge)
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select the `chromium/` directory
+#### Chromium (Chrome, Edge, Brave)
+
+1. Switch to the Chrome manifest:
+   ```bash
+   ./switch-target.sh chrome
+   ```
+2. Open `chrome://extensions/` (or `edge://extensions/` for Edge)
+3. Enable "Developer mode"
+4. Click "Load unpacked"
+5. Select this directory
+6. Click the extension icon - the extension will request pairing with WhatPulse
+7. Approve the pairing request in the WhatPulse client
+
+#### Firefox
+
+1. Switch to the Firefox manifest:
+   ```bash
+   ./switch-target.sh firefox
+   ```
+2. Open `about:debugging#/runtime/this-firefox`
+3. Click "Load Temporary Add-on"
+4. Select the `manifest.json` file
 5. Click the extension icon - the extension will request pairing with WhatPulse
 6. Approve the pairing request in the WhatPulse client
 
-### Firefox
+#### Safari
 
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select the `firefox/manifest.json` file
-4. Click the extension icon - the extension will request pairing with WhatPulse
-5. Approve the pairing request in the WhatPulse client
+1. Switch to the Safari manifest:
+   ```bash
+   ./switch-target.sh safari
+   ```
+2. Safari extensions require additional setup through Xcode and the Safari Extension Builder
+3. Native messaging must be configured for Safari support
 
 ## Authentication Flow
 
@@ -88,14 +130,14 @@ Initial handshake message.
     "name": "chrome",
     "version": "120.0.6099.109"
   },
-  "capabilities": ["activeTab", "visibility"],
+  "capabilities": ["activeTab", "visibility", "url", "usageReport"],
   "ext_version": "1.0.0"
 }
 ```
 
 - Omit `auth_token` for initial pairing request
-- `capabilities`: Features the extension supports
-- `browser.name`: One of `chrome`, `edge`, `brave`, `firefox`, `safari`
+- `capabilities`: Features the extension supports (e.g., `activeTab`, `visibility`, `url`, `usageReport`)
+- `browser.name`: Detected browser name (e.g., `chrome`, `edge`, `brave`, `firefox`, `safari`, `opera`, `vivaldi`, `arc`, `yandex`, `samsung`)
 
 #### `hello_ack` (Server → Extension)
 
@@ -174,7 +216,7 @@ User navigated to a new domain.
 
 #### `heartbeat` (Extension → Server)
 
-Periodic keepalive with current state. Sent every 1 second when tab is active.
+Periodic keepalive with current state. Currently not used - the extension uses `usage_report` instead.
 
 ```json
 {
@@ -191,7 +233,7 @@ Periodic keepalive with current state. Sent every 1 second when tab is active.
 
 #### `usage_report` (Extension → Server)
 
-Accumulated time per domain. Alternative to frequent heartbeats for bandwidth efficiency.
+Accumulated time and input stats per domain. Sent every 30 seconds.
 
 ```json
 {
@@ -324,12 +366,28 @@ ws.onmessage = (event) => console.log('Received:', event.data);
 
 ## Configuration
 
-Extensions read configuration from browser storage:
+The extension stores configuration in browser local storage:
 
-- `wsPort`: WebSocket port (default: 3488)
+- `clientId`: Stable UUID for this extension install
 - `authToken`: Authentication token (received from pairing)
-- `enabled`: Feature toggle
+- `enabled`: Feature toggle (default: true)
+- `metadataSentTimes`: Cache of when favicons were last sent per domain
 
-## Building for Production
+The WebSocket port is fixed at `3488` and must match the WhatPulse desktop client.
 
-For production releases, extensions should be packaged and signed through the respective browser stores. This repo contains development versions for testing.
+## Building for production
+
+The project uses GitHub Actions for automated releases. When code is pushed to the `release` branch:
+
+1. The workflow extracts the version from `manifest-chrome.json`
+2. For each target (Chrome, Firefox), it:
+   - Switches the manifest using `switch-target.sh`
+   - Zips the extension files
+   - Uploads to R2 storage
+3. Sends a Discord notification with the download link
+
+Release artifacts are available at:
+- `https://releases-dev.whatpulse.org/browser-extensions/v{version}-chrome-extension.zip`
+- `https://releases-dev.whatpulse.org/browser-extensions/v{version}-firefox-extension.zip`
+
+For browser store releases, extensions should be packaged and signed through the respective browser stores.
