@@ -2,6 +2,8 @@
 
 A unified browser extension that connects to the WhatPulse desktop client via WebSocket to enable website time insights.
 
+![popup](./screenshots/whatpulse-web-insights-popup.png)
+
 ## Architecture
 
 The extension uses a **local WebSocket connection** to communicate with the WhatPulse client running on the same machine. It monitors active tabs and sends domain usage information when conditions are met.
