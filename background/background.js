@@ -871,6 +871,34 @@ function testConnectionForOptions(sendResponse) {
   }
 }
 
+// ============ First Install Handler ============
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    try {
+      // Gather tracking parameters
+      const browserInfo = await getBrowserInfo();
+
+      // Build URL with tracking parameters
+      const params = new URLSearchParams({
+        type: browserInfo.name,
+        version: browserInfo.version
+      });
+
+      const welcomeUrl = `https://whatpulse.org/extension/installed?${params.toString()}`;
+
+      // Open welcome page
+      chrome.tabs.create({ url: welcomeUrl });
+
+      console.log('[WhatPulse] First install - opened welcome page');
+    } catch (e) {
+      console.error('[WhatPulse] Error opening welcome page:', e);
+      // Fallback to basic URL without params
+      chrome.tabs.create({ url: 'https://whatpulse.org/extension/installed' });
+    }
+  }
+});
+
 // ============ Initialization ============
 
 (async () => {
